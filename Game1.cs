@@ -1,8 +1,10 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.MediaFoundation;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks.Sources;
 
 namespace spaceInvaders
 {
@@ -15,6 +17,11 @@ namespace spaceInvaders
         private List<Projectile> projectiles;
         private TimeSpan shootCooldown = TimeSpan.FromMilliseconds(1000);
         private TimeSpan lastShotTime = TimeSpan.Zero;
+        private int score;
+        SpriteFont scoreFont;
+        int startX;
+        int startY;
+        private double movement = 0;
 
         public Game1()
         {
@@ -43,6 +50,12 @@ namespace spaceInvaders
             int rectWidth = totalRectWidth / enemyNum;
             int rectHeight = screenHeight / 20;
             int numRows = 4;
+            int movement = 0;
+
+            int score = 0;
+            int yOffset = 50;
+            int xOffset = 0;
+            scoreFont = Content.Load<SpriteFont>("score");
 
             // Player setup
             int playerWidth = rectWidth;
@@ -59,10 +72,18 @@ namespace spaceInvaders
             //to fit the total width of the screen
             for (int j = 0; j < numRows; j++)
             {
-                int yPosition = j * (rectHeight + 10);
+                int yPosition = j * (rectHeight + 10) + yOffset;
+                if (j == 0)
+                {
+                    startY = yPosition;
+                }
                 for (int i = 0; i < enemyNum; i++)
                 {
-                    int xPosition = i * (rectWidth + 10);
+                    int xPosition = i * (rectWidth + 10) + xOffset;
+                    if (j == 0 && i == 0)
+                    {
+                        startX = xPosition;
+                    }
                     enemies.Add(new Enemy(GraphicsDevice, xPosition, yPosition, rectWidth, rectHeight));
                 }
             }
@@ -84,6 +105,7 @@ namespace spaceInvaders
                         //it removes the projectile and the enemy
                         projectiles.RemoveAt(i);
                         enemies.RemoveAt(j);
+                        score++;
                         break;
                     }
                 }
@@ -101,7 +123,7 @@ namespace spaceInvaders
                 Rectangle playerBounds = player.GetBounds();
                 int projectileX = playerBounds.Center.X;
                 int projectileY = playerBounds.Top - 10;
-                Projectile newProjectile = new Projectile(GraphicsDevice, projectileX, projectileY, 5, 10);
+                Projectile newProjectile = new Projectile(GraphicsDevice, projectileX, projectileY, 15, 10);
 
                 //add a new projectile to projectiles list
                 projectiles.Add(newProjectile);
@@ -113,6 +135,40 @@ namespace spaceInvaders
             {
                 projectile.Update(gameTime);
             }
+            movement += 0.1;
+
+            //goes through a loop consisting of 120 steps:
+            //changes movement type every 30 steps
+            //goes right -> down -> left -> down -> repeat
+            movement += 0.1;
+
+            switch (true)
+            {
+                case bool when movement >= 0 && movement < 30:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.rightMovement(gameTime);
+                    }
+                    break;
+
+                case bool when movement >= 30 && movement < 60:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.downMovement(gameTime);
+                    }
+                    break;
+
+                case bool when movement >= 60 && movement < 90:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.leftMovement(gameTime);
+                    }
+                    break;
+
+                case bool when movement >= 90:
+                    movement = 0;
+                    break;
+            }
 
             CheckCollisions();
             player.Update(gameTime);
@@ -121,7 +177,7 @@ namespace spaceInvaders
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin();
 
@@ -139,6 +195,12 @@ namespace spaceInvaders
             //draw player to the screen
             player.Draw(spriteBatch);
 
+            spriteBatch.End();
+
+            spriteBatch.Begin();
+            spriteBatch.DrawString(scoreFont, "Score: " + score,
+                new Vector2(10, 10), Color.White, 0, Vector2.Zero,
+                1, SpriteEffects.None, 1);
             spriteBatch.End();
 
             base.Draw(gameTime);

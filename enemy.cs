@@ -6,14 +6,15 @@ namespace spaceInvaders
     internal class Enemy
     {
         private Texture2D pixel;
-        private int xPosition;
-        private int yPosition;
+        private double xPosition;
+        private double yPosition;
         private int width;
         private int height;
+        private double speed = 0.1; // Reduced speed for smoother movement
 
         public Rectangle GetBounds()
         {
-            return new Rectangle(xPosition, yPosition, width, height);
+            return new Rectangle((int)xPosition, (int)yPosition, width, height);
         }
 
         //initializes a rectangle with width and height
@@ -29,11 +30,25 @@ namespace spaceInvaders
             pixel.SetData(new[] { Color.White });
         }
 
+        public void downMovement(GameTime gameTime)
+        {
+            yPosition += speed;
+        }
+
+        public void leftMovement(GameTime gameTime)
+        {
+            xPosition -= speed;
+        }
+
+        public void rightMovement(GameTime gameTime)
+        {
+            xPosition += speed;
+        }
+
         public void Draw(SpriteBatch spriteBatch)
         {
             //draws the pixel sprite from earlier using position, width and height
-            //y-value goes unused
-            spriteBatch.Draw(pixel, new Rectangle(xPosition, yPosition, width, height), Color.Red);
+            spriteBatch.Draw(pixel, new Rectangle((int)xPosition, (int)yPosition, width, height), Color.Red);
         }
     }
 }
