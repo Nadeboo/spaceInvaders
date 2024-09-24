@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace spaceInvaders
 {
-    internal class Projectile
+    public class Projectile
     {
         private Texture2D pixel;
         private Vector2 position;
@@ -24,6 +24,16 @@ namespace spaceInvaders
             this.height = height;
             pixel = new Texture2D(graphicsDevice, 1, 1);
             pixel.SetData(new[] { Color.White });
+        }
+
+        public static Projectile Create(GraphicsDevice graphicsDevice, Rectangle playerBounds)
+        {
+            int projectileWidth = 15;
+            int projectileHeight = 10;
+            int projectileX = playerBounds.Center.X - (projectileWidth / 2);
+            int projectileY = playerBounds.Top - projectileHeight;
+
+            return new Projectile(graphicsDevice, projectileX, projectileY, projectileWidth, projectileHeight);
         }
 
         public void Update(GameTime gameTime)

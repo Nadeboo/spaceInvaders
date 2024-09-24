@@ -1,10 +1,37 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SharpDX.MediaFoundation;
+using spaceInvaders;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks.Sources;
+using System.Linq;
+
+//Project overview:
+//    Enemies are created through a 2D matrix in enemy.cs
+//    Enemies consist of 1,1 sprites with an attached rectangle that's colored in, 
+//    to allow for dynamic enemy resizing dependent on how many enemies you want.
+//    Enemies will always fill the entire screen width no matter what, and from
+//    testing stop being visible at all around 60 or 70 columns. 
+
+//    Player is created in player.cs with a width of 30, height of 30, and position
+//    halfway across the screen 10 pixels up from the bottom
+//    Whenever you hold left or right the player moves at 5 pixels per frame
+
+//    Projectiles are created in projectile.cs with a width of 15 and height of 10
+//    Projectiles move upwards at a speed of 5 pixels per second when created
+//    Projectiles are created at the origin point of the player
+
+//    startButton.cs handles clicking the button when you start the game. The mouse
+//    colliding with the bounds of the button colors it gray, but otherwise there's
+//    nothing interesting going on.
+
+//    Reset.cs contains a ton of methods for resetting the game state
+
+//  apart from all the normal (loading, drawing, updating) game1 handles some collision
+//  that could probably be moved to a separate class
+//  specifically it contains the functions for checking if enemies have hit the bottom
+//  of the screen, and for checking if enemies have collided with projectiles,
+
 
 namespace spaceInvaders
 {
@@ -12,198 +39,281 @@ namespace spaceInvaders
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch spriteBatch;
-        private List<Enemy> enemies;
-        private Player player;
-        private List<Projectile> projectiles;
+        private StartButton startButton;
+        private Reset reset;
+
+        public Player Player;
+        public List<Enemy> Enemies;
+        public List<Enemy> hardEnemies;
+        public List<Projectile> Projectiles;
+        public List<Vector2> InitialEnemyPositions;
+
+        private SpriteFont scoreFont;
+        private Rectangle bottomBoundary;
+
+        public int Score;
+        public int Lives;
+        private int startX;
+        private int startY;
+        public int EnemyWidth;
+        public int EnemyHeight;
+
+        public double Movement;
+        public double InitialMovement;
+
         private TimeSpan shootCooldown = TimeSpan.FromMilliseconds(1000);
         private TimeSpan lastShotTime = TimeSpan.Zero;
-        private int score;
-        SpriteFont scoreFont;
-        int startX;
-        int startY;
-        private double movement = 0;
+
+        public enum GameState { Start, InGame, GameOver }
+        public GameState CurrentGameState;
 
         public Game1()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            Lives = 5;
         }
 
+        //creates a rectangle across the bottom of the screen
+        //sets gamestate to start
         protected override void Initialize()
         {
+            bottomBoundary = new Rectangle(0, GraphicsDevice.Viewport.Height - 10, GraphicsDevice.Viewport.Width, 10);
+            CurrentGameState = GameState.Start;
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            //enemy.cs, projectile.cs
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            enemies = new List<Enemy>();
-            projectiles = new List<Projectile>();
-
-            int enemyNum = 20;
-            int screenWidth = GraphicsDevice.Viewport.Width;
-            int screenHeight = GraphicsDevice.Viewport.Height;
-            int totalSpaceWidth = (enemyNum - 1) * 10;
-            int totalRectWidth = screenWidth - totalSpaceWidth;
-            int rectWidth = totalRectWidth / enemyNum;
-            int rectHeight = screenHeight / 20;
-            int numRows = 4;
-            int movement = 0;
-
-            int score = 0;
-            int yOffset = 50;
-            int xOffset = 0;
             scoreFont = Content.Load<SpriteFont>("score");
 
-            // Player setup
-            int playerWidth = rectWidth;
-            int playerHeight = rectHeight;
-            int playerX = (screenWidth - playerWidth) / 2;
-            int playerY = screenHeight - playerHeight - 10;
+            int screenWidth = GraphicsDevice.Viewport.Width;
+            int screenHeight = GraphicsDevice.Viewport.Height;
 
-            //player.cs
-            player = new Player(GraphicsDevice, playerX, playerY, playerWidth, playerHeight);
+            // Initialize StartButton
+            startButton = new StartButton(Content, screenWidth, screenHeight);
 
-            // Enemy setup
-            //create a 2D matrix of enemies
-            //the width of individual enemies will always adjust
-            //to fit the total width of the screen
-            for (int j = 0; j < numRows; j++)
-            {
-                int yPosition = j * (rectHeight + 10) + yOffset;
-                if (j == 0)
-                {
-                    startY = yPosition;
-                }
-                for (int i = 0; i < enemyNum; i++)
-                {
-                    int xPosition = i * (rectWidth + 10) + xOffset;
-                    if (j == 0 && i == 0)
-                    {
-                        startX = xPosition;
-                    }
-                    enemies.Add(new Enemy(GraphicsDevice, xPosition, yPosition, rectWidth, rectHeight));
-                }
-            }
+            // Initialize Player
+            Player = Player.Initialize(GraphicsDevice, screenWidth, screenHeight);
+
+            // Initialize the Projectiles list
+            Projectiles = new List<Projectile>();
+
+            // Initialize Enemies
+            (Enemies, hardEnemies, InitialEnemyPositions, EnemyWidth, EnemyHeight) = Enemy.InitializeEnemies(GraphicsDevice, screenWidth, screenHeight);
+
+            // Create a list of enemies to draw (50% of hard enemies)
+            Random random = new Random();
+            enemiesToDraw = hardEnemies.Where(_ => random.NextDouble() < 0.5).ToList();
+
+            //initialize reset code
+            reset = new Reset(this); //reset.cs
+
+            InitialMovement = Movement;
         }
-        private void CheckCollisions()
-        {
-            //iterates backwards through all projectiles
-            for (int i = projectiles.Count - 1; i >= 0; i--)
-            {
-                //for each projectile: iterates backwards
-                //through all enemies
-                for (int j = enemies.Count - 1; j >= 0; j--)
-                {
-                    //each projectile, each frame, checks if it intersects
-                    //with any enemy (checking all of them)
-                    //and if it does:
-                    if (projectiles[i].GetBounds().Intersects(enemies[j].GetBounds()))
-                    {
-                        //it removes the projectile and the enemy
-                        projectiles.RemoveAt(i);
-                        enemies.RemoveAt(j);
-                        score++;
-                        break;
-                    }
-                }
-            }
-        }
+
         protected override void Update(GameTime gameTime)
         {
             KeyboardState keyboardState = Keyboard.GetState();
+            MouseState mouseState = Mouse.GetState();
 
-            //if space is held down and a second or more
-            //has passed since the last shot:
-            //create a new projectile with origins at the player
+            switch (CurrentGameState)
+            {
+                case GameState.Start:
+                    startButton.Update(mouseState);
+                    if (startButton.IsClicked())
+                    {
+                        CurrentGameState = GameState.InGame;
+                    }
+                    break;
+
+                case GameState.InGame:
+                    // Update player
+                    Player.Update(gameTime);
+
+                    // Create and update projectiles
+                    if (keyboardState.IsKeyDown(Keys.Space) && gameTime.TotalGameTime - lastShotTime > shootCooldown)
+                    {
+                        Projectiles.Add(Projectile.Create(GraphicsDevice, Player.GetBounds()));
+                        lastShotTime = gameTime.TotalGameTime;
+                    }
+
+                    for (int i = Projectiles.Count - 1; i >= 0; i--)
+                    {
+                        Projectiles[i].Update(gameTime);
+                        if (!Projectiles[i].IsActive)
+                        {
+                            Projectiles.RemoveAt(i);
+                        }
+                    }
+
+                    // Update enemy movement
+                    Enemy.UpdateMovement(Enemies, ref Movement, gameTime);
+
+                    // Check if enemies have collided with the bottom of the screen
+                    bool anyEnemyHitBottom = Enemies.Any(enemy => enemy.GetBounds().Intersects(bottomBoundary));
+                    if (anyEnemyHitBottom)
+                    {
+                        reset.ResetEnemies();
+                        reset.DecrementLives();
+                        if (Lives <= 0)
+                        {
+                            CurrentGameState = GameState.GameOver;
+                        }
+                    }
+
+                    // Check collisions between projectiles and enemies
+                    for (int i = Projectiles.Count - 1; i >= 0; i--)
+                    {
+                        for (int j = Enemies.Count - 1; j >= 0; j--)
+                        {
+                            if (Projectiles[i].GetBounds().Intersects(Enemies[j].GetBounds()))
+                            {
+                                Projectiles.RemoveAt(i);
+                                Enemies.RemoveAt(j);
+                                Score++;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+
+                case GameState.GameOver:
+                    if (keyboardState.IsKeyDown(Keys.R))
+                    {
+                        reset.ResetGame();
+                        CurrentGameState = GameState.InGame;
+                    }
+                    break;
+            }
+            // Update player
+            Player.Update(gameTime);
+
+            // Create and update projectiles
             if (keyboardState.IsKeyDown(Keys.Space) && gameTime.TotalGameTime - lastShotTime > shootCooldown)
             {
-                Rectangle playerBounds = player.GetBounds();
-                int projectileX = playerBounds.Center.X;
-                int projectileY = playerBounds.Top - 10;
-                Projectile newProjectile = new Projectile(GraphicsDevice, projectileX, projectileY, 15, 10);
-
-                //add a new projectile to projectiles list
-                projectiles.Add(newProjectile);
-
+                Projectiles.Add(Projectile.Create(GraphicsDevice, Player.GetBounds()));
                 lastShotTime = gameTime.TotalGameTime;
             }
-            //for every projectile in projectiles: update projectiles
-            foreach (var projectile in projectiles)
+
+            for (int i = Projectiles.Count - 1; i >= 0; i--)
             {
-                projectile.Update(gameTime);
-            }
-            movement += 0.1;
-
-            //goes through a loop consisting of 120 steps:
-            //changes movement type every 30 steps
-            //goes right -> down -> left -> down -> repeat
-            movement += 0.1;
-
-            switch (true)
-            {
-                case bool when movement >= 0 && movement < 30:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.rightMovement(gameTime);
-                    }
-                    break;
-
-                case bool when movement >= 30 && movement < 60:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.downMovement(gameTime);
-                    }
-                    break;
-
-                case bool when movement >= 60 && movement < 90:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.leftMovement(gameTime);
-                    }
-                    break;
-
-                case bool when movement >= 90:
-                    movement = 0;
-                    break;
+                Projectiles[i].Update(gameTime);
+                if (!Projectiles[i].IsActive)
+                {
+                    Projectiles.RemoveAt(i);
+                }
             }
 
-            CheckCollisions();
-            player.Update(gameTime);
+            // Update enemy movement
+            Enemy.UpdateMovement(Enemies, ref Movement, gameTime);
+
+            if (keyboardState.IsKeyDown(Keys.R))
+            {
+                reset.ResetGame();
+            }
+
+            CheckBottomBoundaryCollision();
+
             base.Update(gameTime);
+        }
+
+
+        private void CheckBottomBoundaryCollision()
+        {
+            bool anyEnemyHitBottom = false;
+            foreach (var enemy in Enemies)
+            {
+                if (enemy.GetBounds().Intersects(bottomBoundary))
+                {
+                    anyEnemyHitBottom = true;
+                    break;
+                }
+            }
+
+            if (anyEnemyHitBottom)
+            {
+                reset.ResetEnemies();
+                reset.DecrementLives();
+            }
         }
 
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.Black);
-
             spriteBatch.Begin();
 
-            //for every enemy in enemies: draw an enemy
-            foreach (var enemy in enemies)
+            switch (CurrentGameState)
             {
-                enemy.Draw(spriteBatch);
-            }
-            //for every projectile in projectiles: draw a projectile
-            foreach (var projectile in projectiles)
-            {
-                projectile.Draw(spriteBatch);
-            }
+                case GameState.Start:
+                    startButton.Draw(spriteBatch);
+                    break;
 
-            //draw player to the screen
-            player.Draw(spriteBatch);
+                case GameState.InGame:
+                    // Draw the bottom boundary rectangle
+                    Texture2D pixel = new Texture2D(GraphicsDevice, 1, 1);
+                    pixel.SetData(new[] { Color.White });
+                    spriteBatch.Draw(pixel, bottomBoundary, Color.White);
+
+                    // Draw enemies
+                    foreach (var enemy in Enemies)
+                    {
+                        enemy.Draw(spriteBatch);
+                    }
+
+                    foreach (var hardEnemy in hardEnemies)
+                    {
+                        if (random.NextDouble() < 0.5)
+                        {
+                            hardEnemy.DrawWhite(spriteBatch);
+                        }
+                    }
+
+                    // Draw projectiles
+                    foreach (var projectile in Projectiles)
+                    {
+                        projectile.Draw(spriteBatch);
+                    }
+
+                    // Draw player
+                    Player.Draw(spriteBatch);
+
+                    // Draw score
+                    spriteBatch.DrawString(scoreFont, "Score: " + Score,
+                        new Vector2(10, 10), Color.White, 0, Vector2.Zero,
+                        1, SpriteEffects.None, 1);
+
+                    // Draw lives
+                    spriteBatch.DrawString(scoreFont, "Lives: " + Lives,
+                        new Vector2(GraphicsDevice.Viewport.Width - 100, 10), Color.White);
+                    break;
+
+                case GameState.GameOver:
+                    string gameOverText = "Game Over!";
+                    string restartText = "Press R to restart";
+                    Vector2 gameOverSize = scoreFont.MeasureString(gameOverText);
+                    Vector2 restartSize = scoreFont.MeasureString(restartText);
+
+                    spriteBatch.DrawString(scoreFont, gameOverText,
+                        new Vector2((GraphicsDevice.Viewport.Width - gameOverSize.X) / 2,
+                        GraphicsDevice.Viewport.Height / 2 - gameOverSize.Y),
+                        Color.Red);
+
+                    spriteBatch.DrawString(scoreFont, restartText,
+                        new Vector2((GraphicsDevice.Viewport.Width - restartSize.X) / 2,
+                        GraphicsDevice.Viewport.Height / 2 + restartSize.Y),
+                        Color.White);
+                    break;
+            }
 
             spriteBatch.End();
-
-            spriteBatch.Begin();
-            spriteBatch.DrawString(scoreFont, "Score: " + score,
-                new Vector2(10, 10), Color.White, 0, Vector2.Zero,
-                1, SpriteEffects.None, 1);
-            spriteBatch.End();
-
             base.Draw(gameTime);
         }
     }
 }
+
+        //loops through all projectiles, and then for every projectile,
+        //loops through all enemies to check if they've collided
+        //if they have, enemy and projectile are destroyed
