@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 
 namespace spaceInvaders
@@ -14,43 +15,8 @@ namespace spaceInvaders
         private double speed = 0.1;
         private Vector2 initialPosition;
 
-        public static void UpdateMovement(List<Enemy> enemies, ref double movement, GameTime gameTime)
-        {
-            movement += 0.1;
-
-            switch (true)
-            {
-                case bool when movement >= 0 && movement < 30:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.rightMovement(gameTime);
-                    }
-                    break;
-                case bool when movement >= 30 && movement < 60:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.downMovement(gameTime);
-                    }
-                    break;
-                case bool when movement >= 60 && movement < 90:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.leftMovement(gameTime);
-                    }
-                    break;
-                case bool when movement >= 90 && movement < 120:
-                    foreach (Enemy enemy in enemies)
-                    {
-                        enemy.downMovement(gameTime);
-                    }
-                    break;
-                case bool when movement >= 120:
-                    movement = 0;
-                    break;
-            }
-        }
         public static (List<Enemy> regularEnemies, List<Enemy> hardEnemies, List<Vector2> initialPositions, int enemyWidth, int enemyHeight)
-           InitializeEnemies(GraphicsDevice graphicsDevice, int screenWidth, int screenHeight)
+        InitializeEnemies(GraphicsDevice graphicsDevice, int screenWidth, int screenHeight)
         {
             List<Enemy> regularEnemies = new List<Enemy>();
             List<Enemy> hardEnemies = new List<Enemy>();
@@ -61,13 +27,12 @@ namespace spaceInvaders
             int totalRectWidth = screenWidth - totalSpaceWidth;
             int enemyWidth = totalRectWidth / enemyNum;
             int enemyHeight = screenHeight / 20;
-            int hardEnemyWidth = enemyWidth + 1;
-            int hardEnemyHeight = enemyHeight + 1;
+            int hardEnemyWidth = enemyWidth ;
+            int hardEnemyHeight = enemyHeight;
             int numRows = 5;
             int yOffset = 50;
             int xOffset = 0;
 
-            // Initialize regular enemies
             for (int j = 0; j < numRows; j++)
             {
                 int yPosition = j * (enemyHeight + 10) + yOffset;
@@ -75,25 +40,16 @@ namespace spaceInvaders
                 for (int i = 0; i < enemyNum; i++)
                 {
                     int xPosition = i * (enemyWidth + 10) + xOffset;
-
                     Vector2 position = new Vector2(xPosition, yPosition);
+
                     initialPositions.Add(position);
                     regularEnemies.Add(new Enemy(graphicsDevice, xPosition, yPosition, enemyWidth, enemyHeight));
-                }
-            }
 
-            // Initialize hard enemies
-            for (int j = 0; j < numRows; j++)
-            {
-                int yPosition = j * (enemyHeight + 10) + yOffset;
-
-                for (int i = 0; i < enemyNum; i++)
-                {
-                    int xPosition = i * (enemyWidth + 10) + xOffset;
-
-                    Vector2 position = new Vector2(xPosition, yPosition);
-                    initialPositions.Add(position);
-                    hardEnemies.Add(new Enemy(graphicsDevice, xPosition, yPosition, enemyWidth + 1, enemyHeight + 1));
+                    // 50% chance to add a hard enemy at the same position
+                    if (new Random().Next(2) == 0)
+                    {
+                        hardEnemies.Add(new Enemy(graphicsDevice, xPosition, yPosition, hardEnemyWidth, hardEnemyHeight));
+                    }
                 }
             }
 
@@ -146,6 +102,44 @@ namespace spaceInvaders
         {
             xPosition += speed;
         }
+
+        public static void UpdateMovement(List<Enemy> enemies, ref double movement, GameTime gameTime)
+        {
+            movement += 0.1;
+
+            switch (true)
+            {
+                case bool when movement >= 0 && movement < 30:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.rightMovement(gameTime);
+                    }
+                    break;
+                case bool when movement >= 30 && movement < 60:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.downMovement(gameTime);
+                    }
+                    break;
+                case bool when movement >= 60 && movement < 90:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.leftMovement(gameTime);
+                    }
+                    break;
+                case bool when movement >= 90 && movement < 120:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.downMovement(gameTime);
+                    }
+                    break;
+                case bool when movement >= 120:
+                    movement = 0;
+                    break;
+            }
+        }
+
+
 
         public void Draw(SpriteBatch spriteBatch)
         {

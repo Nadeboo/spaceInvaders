@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using spaceInvaders;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,8 +26,8 @@ using System.Linq;
 
 //    Reset.cs contains a ton of methods for resetting the game state
 
-//  apart from all the normal (loading, drawing, updating) game1 handles some collision
-//  that could probably be moved to a separate class
+//  game1.cs handles some collision outside of just loading and running the methods
+//  from the other classes, that could probably be moved into its own separate class
 //  specifically it contains the functions for checking if enemies have hit the bottom
 //  of the screen, and for checking if enemies have collided with projectiles,
 
@@ -45,6 +44,7 @@ namespace spaceInvaders
         public Player Player;
         public List<Enemy> Enemies;
         public List<Enemy> hardEnemies;
+        private List<Enemy> enemiesToDraw;
         public List<Projectile> Projectiles;
         public List<Vector2> InitialEnemyPositions;
 
@@ -149,9 +149,6 @@ namespace spaceInvaders
                         }
                     }
 
-                    // Update enemy movement
-                    Enemy.UpdateMovement(Enemies, ref Movement, gameTime);
-
                     // Check if enemies have collided with the bottom of the screen
                     bool anyEnemyHitBottom = Enemies.Any(enemy => enemy.GetBounds().Intersects(bottomBoundary));
                     if (anyEnemyHitBottom)
@@ -165,8 +162,11 @@ namespace spaceInvaders
                     }
 
                     // Check collisions between projectiles and enemies
+
+                    // Collision detection for regular enemies
                     for (int i = Projectiles.Count - 1; i >= 0; i--)
                     {
+                        bool collided = false;
                         for (int j = Enemies.Count - 1; j >= 0; j--)
                         {
                             if (Projectiles[i].GetBounds().Intersects(Enemies[j].GetBounds()))
@@ -174,9 +174,29 @@ namespace spaceInvaders
                                 Projectiles.RemoveAt(i);
                                 Enemies.RemoveAt(j);
                                 Score++;
+                                collided = true;
                                 break;
                             }
                         }
+                        if (collided) continue;
+                    }
+
+                    // Collision detection for hard enemies
+                    for (int k = Projectiles.Count - 1; k >= 0; k--)
+                    {
+                        bool hardCollided = false;
+                        for (int l = hardEnemies.Count - 1; l >= 0; l--)
+                        {
+                            if (Projectiles[k].GetBounds().Intersects(hardEnemies[l].GetBounds()))
+                            {
+                                Projectiles.RemoveAt(k);
+                                hardEnemies.RemoveAt(l);
+                                Score++;
+                                hardCollided = true;
+                                break;
+                            }
+                        }
+                        if (hardCollided) continue;
                     }
                     break;
 
@@ -209,6 +229,7 @@ namespace spaceInvaders
 
             // Update enemy movement
             Enemy.UpdateMovement(Enemies, ref Movement, gameTime);
+            Enemy.UpdateMovement(hardEnemies, ref Movement, gameTime);
 
             if (keyboardState.IsKeyDown(Keys.R))
             {
@@ -265,10 +286,7 @@ namespace spaceInvaders
 
                     foreach (var hardEnemy in hardEnemies)
                     {
-                        if (random.NextDouble() < 0.5)
-                        {
-                            hardEnemy.DrawWhite(spriteBatch);
-                        }
+                        hardEnemy.DrawWhite(spriteBatch);
                     }
 
                     // Draw projectiles
