@@ -12,7 +12,7 @@ namespace spaceInvaders
         private double yPosition;
         private int width;
         private int height;
-        private double speed = 0.1;
+        private double speed = 10;
         private Vector2 initialPosition;
 
         public static (List<Enemy> regularEnemies, List<Enemy> hardEnemies, List<Vector2> initialPositions, int enemyWidth, int enemyHeight)
@@ -112,28 +112,34 @@ namespace spaceInvaders
                 case bool when movement >= 0 && movement < 30:
                     foreach (Enemy enemy in enemies)
                     {
-                        enemy.rightMovement(gameTime);
+                        enemy.leftMovement(gameTime);
                     }
                     break;
                 case bool when movement >= 30 && movement < 60:
                     foreach (Enemy enemy in enemies)
                     {
-                        enemy.downMovement(gameTime);
+                        enemy.rightMovement(gameTime);
                     }
                     break;
                 case bool when movement >= 60 && movement < 90:
                     foreach (Enemy enemy in enemies)
                     {
-                        enemy.leftMovement(gameTime);
+                        enemy.downMovement(gameTime);
                     }
                     break;
                 case bool when movement >= 90 && movement < 120:
                     foreach (Enemy enemy in enemies)
                     {
-                        enemy.downMovement(gameTime);
+                        enemy.rightMovement(gameTime);
                     }
                     break;
-                case bool when movement >= 120:
+                case bool when movement >= 120 && movement < 150:
+                    foreach (Enemy enemy in enemies)
+                    {
+                        enemy.leftMovement(gameTime);
+                    }
+                    break;
+                case bool when movement >= 150:
                     movement = 0;
                     break;
             }

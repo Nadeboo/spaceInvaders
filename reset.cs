@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 
 namespace spaceInvaders
@@ -26,16 +27,25 @@ namespace spaceInvaders
         public void ResetEnemies()
         {
             game.Enemies.Clear();
+            game.hardEnemies.Clear();
+            Random random = new Random();
             foreach (Vector2 position in game.InitialEnemyPositions)
             {
-                game.Enemies.Add(new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight));
+                if (random.Next(2) == 0)
+                {
+                    game.Enemies.Add(new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight));
+                }
+                else
+                {
+                    game.hardEnemies.Add(new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight));
+                }
             }
             ResetMovement();
         }
 
         private void ResetLives()
         {
-            game.Lives = 5;
+            game.Lives = 1;
         }
 
         private void ResetScore()

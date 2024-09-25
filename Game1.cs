@@ -36,7 +36,7 @@ namespace spaceInvaders
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager _graphics;
+        private GraphicsDeviceManager graphics;
         private SpriteBatch spriteBatch;
         private StartButton startButton;
         private Reset reset;
@@ -47,6 +47,12 @@ namespace spaceInvaders
         private List<Enemy> enemiesToDraw;
         public List<Projectile> Projectiles;
         public List<Vector2> InitialEnemyPositions;
+        public Texture2D startTexture;
+        public Texture2D gameOverTexture;
+        public Texture2D tank;
+        public Rectangle source;
+        int frame;
+        double frameTimer, frameInterval;
 
         private SpriteFont scoreFont;
         private Rectangle bottomBoundary;
@@ -58,6 +64,8 @@ namespace spaceInvaders
         public int EnemyWidth;
         public int EnemyHeight;
 
+        private int randomX1, randomY1, randomX2, randomY2, randomX3, randomY3, randomX4, randomY4, randomX5, randomY5;
+
         public double Movement;
         public double InitialMovement;
 
@@ -66,13 +74,16 @@ namespace spaceInvaders
 
         public enum GameState { Start, InGame, GameOver }
         public GameState CurrentGameState;
+        private Random random = new Random();
 
         public Game1()
         {
-            _graphics = new GraphicsDeviceManager(this);
+            graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            Lives = 5;
+            Lives = 1;
+            graphics.PreferredBackBufferWidth = 1920;
+            graphics.PreferredBackBufferHeight = 1080;
         }
 
         //creates a rectangle across the bottom of the screen
@@ -88,25 +99,43 @@ namespace spaceInvaders
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
             scoreFont = Content.Load<SpriteFont>("score");
+            tank = Content.Load<Texture2D>("SpriteSheet_Tanks");
 
             int screenWidth = GraphicsDevice.Viewport.Width;
             int screenHeight = GraphicsDevice.Viewport.Height;
+            startTexture = Content.Load<Texture2D>("bender");
+            gameOverTexture = Content.Load<Texture2D>("ride");
+            source = new Rectangle(0, 288, 32, 32);
 
-            // Initialize StartButton
+
+
+            // Initialization
             startButton = new StartButton(Content, screenWidth, screenHeight);
-
-            // Initialize Player
             Player = Player.Initialize(GraphicsDevice, screenWidth, screenHeight);
-
-            // Initialize the Projectiles list
             Projectiles = new List<Projectile>();
-
-            // Initialize Enemies
             (Enemies, hardEnemies, InitialEnemyPositions, EnemyWidth, EnemyHeight) = Enemy.InitializeEnemies(GraphicsDevice, screenWidth, screenHeight);
 
             // Create a list of enemies to draw (50% of hard enemies)
             Random random = new Random();
             enemiesToDraw = hardEnemies.Where(_ => random.NextDouble() < 0.5).ToList();
+
+            int randomX = random.Next(0, GraphicsDevice.Viewport.Width - source.Width);
+            int randomY = random.Next(0, GraphicsDevice.Viewport.Height - source.Height);
+
+            randomX1 = random.Next(0, 1920);
+            randomY1 = random.Next(0, 1080);
+
+            randomX2 = random.Next(0, 1920);
+            randomY2 = random.Next(0, 1080);
+
+            randomX3 = random.Next(0, 1920);
+            randomY3 = random.Next(0, 1080);
+
+            randomX4 = random.Next(0, 1920);
+            randomY4 = random.Next(0, 1080);
+
+            randomX5 = random.Next(0, 1920);
+            randomY5 = random.Next(0, 1080);
 
             //initialize reset code
             reset = new Reset(this); //reset.cs
@@ -118,6 +147,18 @@ namespace spaceInvaders
         {
             KeyboardState keyboardState = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
+
+            frameTimer -= gameTime.ElapsedGameTime.TotalMilliseconds;
+            if (frameTimer <= 0)
+            {
+                frameTimer = frameInterval;
+                frame++;
+                if (frame > 10)
+                {
+                    frame = 0;
+                }
+                source.X = frame * 32; //Varje delbild är 32 pixlar bred
+            }
 
             switch (CurrentGameState)
             {
@@ -269,6 +310,8 @@ namespace spaceInvaders
             switch (CurrentGameState)
             {
                 case GameState.Start:
+                    spriteBatch.Draw(startTexture, Vector2.Zero, Color.White);
+                    spriteBatch.Draw(tank, new Vector2(100, 100), source, Color.White);
                     startButton.Draw(spriteBatch);
                     break;
 
@@ -309,6 +352,14 @@ namespace spaceInvaders
                     break;
 
                 case GameState.GameOver:
+                    spriteBatch.Draw(gameOverTexture, Vector2.Zero, Color.White);
+
+                    spriteBatch.Draw(tank, new Vector2(randomX1, randomY1), source, Color.White);
+                    spriteBatch.Draw(tank, new Vector2(randomX2, randomY2), source, Color.White);
+                    spriteBatch.Draw(tank, new Vector2(randomX3, randomY3), source, Color.White);
+                    spriteBatch.Draw(tank, new Vector2(randomX4, randomY4), source, Color.White);
+                    spriteBatch.Draw(tank, new Vector2(randomX5, randomY5), source, Color.White);
+
                     string gameOverText = "Game Over!";
                     string restartText = "Press R to restart";
                     Vector2 gameOverSize = scoreFont.MeasureString(gameOverText);
