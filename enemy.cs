@@ -12,7 +12,7 @@ namespace spaceInvaders
         private double yPosition;
         private int width;
         private int height;
-        private double speed = 10;
+        private double speed = 2; //enemy speed
         private Vector2 initialPosition;
 
         public static (List<Enemy> regularEnemies, List<Enemy> hardEnemies, List<Vector2> initialPositions, int enemyWidth, int enemyHeight)
@@ -22,14 +22,14 @@ namespace spaceInvaders
             List<Enemy> hardEnemies = new List<Enemy>();
             List<Vector2> initialPositions = new List<Vector2>();
 
-            int enemyNum = 20; // num of columns
+            int enemyNum = 10; // num of columns
+            int numRows = 10; //num of rows. multiply together for the total number of enemies
             int totalSpaceWidth = (enemyNum - 1) * 10;
             int totalRectWidth = screenWidth - totalSpaceWidth;
             int enemyWidth = totalRectWidth / enemyNum;
             int enemyHeight = screenHeight / 20;
             int hardEnemyWidth = enemyWidth ;
             int hardEnemyHeight = enemyHeight;
-            int numRows = 5;
             int yOffset = 50;
             int xOffset = 0;
 

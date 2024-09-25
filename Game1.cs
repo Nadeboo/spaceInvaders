@@ -54,6 +54,9 @@ namespace spaceInvaders
         int frame;
         double frameTimer, frameInterval;
 
+        private Texture2D youwin;
+        private Texture2D youlose;
+
         private SpriteFont scoreFont;
         private Rectangle bottomBoundary;
 
@@ -72,7 +75,7 @@ namespace spaceInvaders
         private TimeSpan shootCooldown = TimeSpan.FromMilliseconds(1000);
         private TimeSpan lastShotTime = TimeSpan.Zero;
 
-        public enum GameState { Start, InGame, GameOver }
+        public enum GameState { Start, InGame, GameOver, GameWon }
         public GameState CurrentGameState;
         private Random random = new Random();
 
@@ -105,6 +108,8 @@ namespace spaceInvaders
             int screenHeight = GraphicsDevice.Viewport.Height;
             startTexture = Content.Load<Texture2D>("bender");
             gameOverTexture = Content.Load<Texture2D>("ride");
+            youwin = Content.Load<Texture2D>("youwin");
+            youlose = Content.Load<Texture2D>("youlose");
             source = new Rectangle(0, 288, 32, 32);
 
 
@@ -157,7 +162,7 @@ namespace spaceInvaders
                 {
                     frame = 0;
                 }
-                source.X = frame * 32; //Varje delbild är 32 pixlar bred
+                source.X = frame * 32;
             }
 
             switch (CurrentGameState)
@@ -202,6 +207,11 @@ namespace spaceInvaders
                         }
                     }
 
+                    if (Enemies.Count == 0 && hardEnemies.Count == 0)
+                    {
+                        CurrentGameState = GameState.GameWon;
+                    }
+
                     // Check collisions between projectiles and enemies
 
                     // Collision detection for regular enemies
@@ -242,6 +252,13 @@ namespace spaceInvaders
                     break;
 
                 case GameState.GameOver:
+                    if (keyboardState.IsKeyDown(Keys.R))
+                    {
+                        reset.ResetGame();
+                        CurrentGameState = GameState.InGame;
+                    }
+                    break;
+                case GameState.GameWon:
                     if (keyboardState.IsKeyDown(Keys.R))
                     {
                         reset.ResetGame();
@@ -352,7 +369,7 @@ namespace spaceInvaders
                     break;
 
                 case GameState.GameOver:
-                    spriteBatch.Draw(gameOverTexture, Vector2.Zero, Color.White);
+                    spriteBatch.Draw(youlose, Vector2.Zero, Color.White);
 
                     spriteBatch.Draw(tank, new Vector2(randomX1, randomY1), source, Color.White);
                     spriteBatch.Draw(tank, new Vector2(randomX2, randomY2), source, Color.White);
@@ -360,20 +377,10 @@ namespace spaceInvaders
                     spriteBatch.Draw(tank, new Vector2(randomX4, randomY4), source, Color.White);
                     spriteBatch.Draw(tank, new Vector2(randomX5, randomY5), source, Color.White);
 
-                    string gameOverText = "Game Over!";
-                    string restartText = "Press R to restart";
-                    Vector2 gameOverSize = scoreFont.MeasureString(gameOverText);
-                    Vector2 restartSize = scoreFont.MeasureString(restartText);
+                    break;
 
-                    spriteBatch.DrawString(scoreFont, gameOverText,
-                        new Vector2((GraphicsDevice.Viewport.Width - gameOverSize.X) / 2,
-                        GraphicsDevice.Viewport.Height / 2 - gameOverSize.Y),
-                        Color.Red);
-
-                    spriteBatch.DrawString(scoreFont, restartText,
-                        new Vector2((GraphicsDevice.Viewport.Width - restartSize.X) / 2,
-                        GraphicsDevice.Viewport.Height / 2 + restartSize.Y),
-                        Color.White);
+                case GameState.GameWon:
+                    spriteBatch.Draw(youwin, Vector2.Zero, Color.White);
                     break;
             }
 
@@ -382,7 +389,3 @@ namespace spaceInvaders
         }
     }
 }
-
-        //loops through all projectiles, and then for every projectile,
-        //loops through all enemies to check if they've collided
-        //if they have, enemy and projectile are destroyed
