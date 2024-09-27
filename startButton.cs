@@ -14,13 +14,10 @@ namespace spaceInvaders
 
         public StartButton(ContentManager content, int screenWidth, int screenHeight)
         {
-            texture = content.Load<Texture2D>("startKnapp");
+            texture = content.Load<Texture2D>("Startknapp");
 
-            // Calculate position to center the button
             int x = (screenWidth - texture.Width) / 2;
             int y = (screenHeight - texture.Height) / 2;
-
-            // Set the bounds based on the texture size
             bounds = new Rectangle(x, y, texture.Width, texture.Height);
             color = Color.White;
             isClicked = false;

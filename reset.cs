@@ -26,20 +26,34 @@ namespace spaceInvaders
 
         public void ResetEnemies()
         {
-            game.Enemies.Clear();
-            game.hardEnemies.Clear();
-            Random random = new Random();
-            foreach (Vector2 position in game.InitialEnemyPositions)
+            // Clear the arrays by setting all elements to null
+            for (int i = 0; i < game.Enemies.GetLength(0); i++)
             {
-                if (random.Next(2) == 0)
+                for (int j = 0; j < game.Enemies.GetLength(1); j++)
                 {
-                    game.Enemies.Add(new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight));
-                }
-                else
-                {
-                    game.hardEnemies.Add(new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight));
+                    game.Enemies[i, j] = null;
+                    game.hardEnemies[i, j] = null;
                 }
             }
+
+            // Repopulate the arrays
+            Random random = new Random();
+            for (int i = 0; i < game.InitialEnemyPositions.GetLength(0); i++)
+            {
+                for (int j = 0; j < game.InitialEnemyPositions.GetLength(1); j++)
+                {
+                    Vector2 position = game.InitialEnemyPositions[i, j];
+                    if (random.Next(2) == 0)
+                    {
+                        game.Enemies[i, j] = new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight);
+                    }
+                    else
+                    {
+                        game.hardEnemies[i, j] = new Enemy(game.GraphicsDevice, (int)position.X, (int)position.Y, game.EnemyWidth, game.EnemyHeight);
+                    }
+                }
+            }
+
             ResetMovement();
         }
 

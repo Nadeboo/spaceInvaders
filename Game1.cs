@@ -5,33 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-//Project overview:
-//    Enemies are created through a 2D matrix in enemy.cs
-//    Enemies consist of 1,1 sprites with an attached rectangle that's colored in, 
-//    to allow for dynamic enemy resizing dependent on how many enemies you want.
-//    Enemies will always fill the entire screen width no matter what, and from
-//    testing stop being visible at all around 60 or 70 columns. 
-
-//    Player is created in player.cs with a width of 30, height of 30, and position
-//    halfway across the screen 10 pixels up from the bottom
-//    Whenever you hold left or right the player moves at 5 pixels per frame
-
-//    Projectiles are created in projectile.cs with a width of 15 and height of 10
-//    Projectiles move upwards at a speed of 5 pixels per second when created
-//    Projectiles are created at the origin point of the player
-
-//    startButton.cs handles clicking the button when you start the game. The mouse
-//    colliding with the bounds of the button colors it gray, but otherwise there's
-//    nothing interesting going on.
-
-//    Reset.cs contains a ton of methods for resetting the game state
-
-//  game1.cs handles some collision outside of just loading and running the methods
-//  from the other classes, that could probably be moved into its own separate class
-//  specifically it contains the functions for checking if enemies have hit the bottom
-//  of the screen, and for checking if enemies have collided with projectiles,
-
-
 namespace spaceInvaders
 {
     public class Game1 : Game
@@ -42,11 +15,11 @@ namespace spaceInvaders
         private Reset reset;
 
         public Player Player;
-        public List<Enemy> Enemies;
-        public List<Enemy> hardEnemies;
+        public Enemy[,] Enemies; 
+        public Enemy[,] hardEnemies; 
+        public Vector2[,] InitialEnemyPositions;
         private List<Enemy> enemiesToDraw;
         public List<Projectile> Projectiles;
-        public List<Vector2> InitialEnemyPositions;
         public Texture2D startTexture;
         public Texture2D gameOverTexture;
         public Texture2D tank;
@@ -120,10 +93,6 @@ namespace spaceInvaders
             Projectiles = new List<Projectile>();
             (Enemies, hardEnemies, InitialEnemyPositions, EnemyWidth, EnemyHeight) = Enemy.InitializeEnemies(GraphicsDevice, screenWidth, screenHeight);
 
-            // Create a list of enemies to draw (50% of hard enemies)
-            Random random = new Random();
-            enemiesToDraw = hardEnemies.Where(_ => random.NextDouble() < 0.5).ToList();
-
             int randomX = random.Next(0, GraphicsDevice.Viewport.Width - source.Width);
             int randomY = random.Next(0, GraphicsDevice.Viewport.Height - source.Height);
 
@@ -146,6 +115,33 @@ namespace spaceInvaders
             reset = new Reset(this); //reset.cs
 
             InitialMovement = Movement;
+        }
+
+        private bool AreAllEnemiesDestroyed()
+        {
+            for (int i = 0; i < Enemies.GetLength(0); i++)
+            {
+                for (int j = 0; j < Enemies.GetLength(1); j++)
+                {
+                    if (Enemies[i, j] != null)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            for (int i = 0; i < hardEnemies.GetLength(0); i++)
+            {
+                for (int j = 0; j < hardEnemies.GetLength(1); j++)
+                {
+                    if (hardEnemies[i, j] != null)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         protected override void Update(GameTime gameTime)
@@ -196,18 +192,29 @@ namespace spaceInvaders
                     }
 
                     // Check if enemies have collided with the bottom of the screen
-                    bool anyEnemyHitBottom = Enemies.Any(enemy => enemy.GetBounds().Intersects(bottomBoundary));
-                    if (anyEnemyHitBottom)
+                    //bool anyEnemyHitBottom = Enemies.Any(enemy => enemy.GetBounds().Intersects(bottomBoundary));
+                    for (int i = 0; i < Enemies.GetLength(0); i++)
                     {
-                        reset.ResetEnemies();
-                        reset.DecrementLives();
-                        if (Lives <= 0)
+                        for (int j = 0; j < Enemies.GetLength(1); j++)
                         {
-                            CurrentGameState = GameState.GameOver;
+                            if (Enemies[i, j] != null && Enemies[i, j].GetBounds().Intersects(bottomBoundary))
+                            {
+                                reset.ResetEnemies();
+                                reset.DecrementLives();
+                                if (Lives <= 0)
+                                {
+                                    CurrentGameState = GameState.GameOver;
+                                }
+                                return; // Exit the method after resetting, as we don't need to check other enemies
+                            }
                         }
                     }
+                    if (AreAllEnemiesDestroyed())
+                    {
+                        CurrentGameState = GameState.GameWon;
+                    }
 
-                    if (Enemies.Count == 0 && hardEnemies.Count == 0)
+                    if (Enemies.GetLength(0) == 0 && hardEnemies.GetLength(0) == 0)
                     {
                         CurrentGameState = GameState.GameWon;
                     }
@@ -218,16 +225,20 @@ namespace spaceInvaders
                     for (int i = Projectiles.Count - 1; i >= 0; i--)
                     {
                         bool collided = false;
-                        for (int j = Enemies.Count - 1; j >= 0; j--)
+                        for (int j = Enemies.GetLength(1) - 1; j >= 0; j--)
                         {
-                            if (Projectiles[i].GetBounds().Intersects(Enemies[j].GetBounds()))
+                            for (int k = Enemies.GetLength(0) - 1; k >= 0; k--)
                             {
-                                Projectiles.RemoveAt(i);
-                                Enemies.RemoveAt(j);
-                                Score++;
-                                collided = true;
-                                break;
+                                if (Enemies[k, j] != null && Projectiles[i].GetBounds().Intersects(Enemies[k, j].GetBounds()))
+                                {
+                                    Projectiles.RemoveAt(i);
+                                    Enemies[k, j] = null;
+                                    Score++;
+                                    collided = true;
+                                    break;
+                                }
                             }
+                            if (collided) break;
                         }
                         if (collided) continue;
                     }
@@ -236,16 +247,20 @@ namespace spaceInvaders
                     for (int k = Projectiles.Count - 1; k >= 0; k--)
                     {
                         bool hardCollided = false;
-                        for (int l = hardEnemies.Count - 1; l >= 0; l--)
+                        for (int l = hardEnemies.GetLength(1) - 1; l >= 0; l--)
                         {
-                            if (Projectiles[k].GetBounds().Intersects(hardEnemies[l].GetBounds()))
+                            for (int m = hardEnemies.GetLength(0) - 1; m >= 0; m--)
                             {
-                                Projectiles.RemoveAt(k);
-                                hardEnemies.RemoveAt(l);
-                                Score++;
-                                hardCollided = true;
-                                break;
+                                if (hardEnemies[m, l] != null && Projectiles[k].GetBounds().Intersects(hardEnemies[m, l].GetBounds()))
+                                {
+                                    Projectiles.RemoveAt(k);
+                                    hardEnemies[m, l] = null; 
+                                    Score += 2; 
+                                    hardCollided = true;
+                                    break;
+                                }
                             }
+                            if (hardCollided) break;
                         }
                         if (hardCollided) continue;
                     }
@@ -303,12 +318,33 @@ namespace spaceInvaders
         private void CheckBottomBoundaryCollision()
         {
             bool anyEnemyHitBottom = false;
-            foreach (var enemy in Enemies)
+
+            // Check regular enemies
+            for (int i = 0; i < Enemies.GetLength(0) && !anyEnemyHitBottom; i++)
             {
-                if (enemy.GetBounds().Intersects(bottomBoundary))
+                for (int j = 0; j < Enemies.GetLength(1); j++)
                 {
-                    anyEnemyHitBottom = true;
-                    break;
+                    if (Enemies[i, j] != null && Enemies[i, j].GetBounds().Intersects(bottomBoundary))
+                    {
+                        anyEnemyHitBottom = true;
+                        break;
+                    }
+                }
+            }
+
+            // Check hard enemies if no regular enemy hit the bottom
+            if (!anyEnemyHitBottom)
+            {
+                for (int i = 0; i < hardEnemies.GetLength(0) && !anyEnemyHitBottom; i++)
+                {
+                    for (int j = 0; j < hardEnemies.GetLength(1); j++)
+                    {
+                        if (hardEnemies[i, j] != null && hardEnemies[i, j].GetBounds().Intersects(bottomBoundary))
+                        {
+                            anyEnemyHitBottom = true;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -339,15 +375,30 @@ namespace spaceInvaders
                     spriteBatch.Draw(pixel, bottomBoundary, Color.White);
 
                     // Draw enemies
-                    foreach (var enemy in Enemies)
+                    for (int i = 0; i < Enemies.GetLength(0); i++)
                     {
-                        enemy.Draw(spriteBatch);
+                        for (int j = 0; j < Enemies.GetLength(1); j++)
+                        {
+                            if (Enemies[i, j] != null)
+                            {
+                                Enemies[i, j].Draw(spriteBatch);
+                            }
+                        }
                     }
 
-                    foreach (var hardEnemy in hardEnemies)
+                    for (int i = 0; i < hardEnemies.GetLength(0); i++)
                     {
-                        hardEnemy.DrawWhite(spriteBatch);
+                        for (int j = 0; j < hardEnemies.GetLength(1); j++)
+                        {
+                            if (hardEnemies[i, j] != null)
+                            {
+                                hardEnemies[i, j].DrawWhite(spriteBatch);
+                            }
+                        }
                     }
+
+
+
 
                     // Draw projectiles
                     foreach (var projectile in Projectiles)
