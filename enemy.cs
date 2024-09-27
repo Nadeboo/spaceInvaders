@@ -11,7 +11,7 @@ namespace spaceInvaders
         private double yPosition;
         private int width;
         private int height;
-        private double speed = 2; // enemy speed
+        private double speed = 10; // enemy speed
         private Vector2 initialPosition;
 
         public static (Enemy[,] regularEnemies, Enemy[,] hardEnemies, Vector2[,] initialPositions, int enemyWidth, int enemyHeight)
@@ -34,17 +34,23 @@ namespace spaceInvaders
 
             Random random = new Random();
 
+            //for every row:
+            //for number of enemies:
             for (int j = 0; j < numRows; j++)
             {
                 int yPosition = j * (enemyHeight + 10) + yOffset;
 
                 for (int i = 0; i < enemyNum; i++)
                 {
+                    //each enemy will be placed right after the other (with a 10 pixel gap)
+                    //on both the y axis and x axis
                     int xPosition = i * (enemyWidth + 10) + xOffset;
                     Vector2 position = new Vector2(xPosition, yPosition);
 
+                    //saves the original positions of enemies
                     initialPositionsArray[j, i] = position;
 
+                    //creates a new instance of an enemy for each of the previously created positions
                     regularEnemiesArray[j, i] = new Enemy(graphicsDevice, xPosition, yPosition, enemyWidth, enemyHeight);
 
                     // 50% chance to add a hard enemy at the same position
@@ -58,28 +64,13 @@ namespace spaceInvaders
             return (regularEnemiesArray, hardEnemiesArray, initialPositionsArray, enemyWidth, enemyHeight);
         }
 
+        //creates a new rectangle for each previously created enemy
         public Rectangle GetBounds()
         {
             return new Rectangle((int)xPosition, (int)yPosition, width, height);
         }
 
-        public void SetInitialPosition(Vector2 position)
-        {
-            initialPosition = position;
-        }
-
-        public Vector2 GetPosition()
-        {
-            return new Vector2((float)xPosition, (float)yPosition);
-        }
-
-        public void ResetToInitialPosition()
-        {
-            xPosition = initialPosition.X;
-            yPosition = initialPosition.Y;
-        }
-
-        // initializes a rectangle with width and height
+        // initializes enemy
         public Enemy(GraphicsDevice graphicsDevice, int x, int y, int width, int height)
         {
             this.xPosition = x;

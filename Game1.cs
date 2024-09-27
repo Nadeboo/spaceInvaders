@@ -77,6 +77,7 @@ namespace spaceInvaders
             scoreFont = Content.Load<SpriteFont>("score");
             tank = Content.Load<Texture2D>("SpriteSheet_Tanks");
 
+
             int screenWidth = GraphicsDevice.Viewport.Width;
             int screenHeight = GraphicsDevice.Viewport.Height;
             startTexture = Content.Load<Texture2D>("bender");
@@ -96,6 +97,8 @@ namespace spaceInvaders
             int randomX = random.Next(0, GraphicsDevice.Viewport.Width - source.Width);
             int randomY = random.Next(0, GraphicsDevice.Viewport.Height - source.Height);
 
+            //for drawing the 5 random sprites on the end screen
+            //i didn't feel like giving it any effort
             randomX1 = random.Next(0, 1920);
             randomY1 = random.Next(0, 1080);
 
@@ -111,11 +114,11 @@ namespace spaceInvaders
             randomX5 = random.Next(0, 1920);
             randomY5 = random.Next(0, 1080);
 
-            //initialize reset code
             reset = new Reset(this); //reset.cs
 
             InitialMovement = Movement;
         }
+
 
         private bool AreAllEnemiesDestroyed()
         {
@@ -149,6 +152,7 @@ namespace spaceInvaders
             KeyboardState keyboardState = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
 
+            //i think this is exclusively used for the animated tank sprites
             frameTimer -= gameTime.ElapsedGameTime.TotalMilliseconds;
             if (frameTimer <= 0)
             {
@@ -172,16 +176,18 @@ namespace spaceInvaders
                     break;
 
                 case GameState.InGame:
-                    // Update player
                     Player.Update(gameTime);
 
                     // Create and update projectiles
+                    //if total game time minus time of the last shot is larger than shootcoldown:
+                    //a full second has passed and we can shoot again
                     if (keyboardState.IsKeyDown(Keys.Space) && gameTime.TotalGameTime - lastShotTime > shootCooldown)
                     {
                         Projectiles.Add(Projectile.Create(GraphicsDevice, Player.GetBounds()));
                         lastShotTime = gameTime.TotalGameTime;
                     }
 
+                    //checks if projectiles have moved above the screen
                     for (int i = Projectiles.Count - 1; i >= 0; i--)
                     {
                         Projectiles[i].Update(gameTime);
@@ -192,7 +198,6 @@ namespace spaceInvaders
                     }
 
                     // Check if enemies have collided with the bottom of the screen
-                    //bool anyEnemyHitBottom = Enemies.Any(enemy => enemy.GetBounds().Intersects(bottomBoundary));
                     for (int i = 0; i < Enemies.GetLength(0); i++)
                     {
                         for (int j = 0; j < Enemies.GetLength(1); j++)
@@ -205,7 +210,7 @@ namespace spaceInvaders
                                 {
                                     CurrentGameState = GameState.GameOver;
                                 }
-                                return; // Exit the method after resetting, as we don't need to check other enemies
+                                return;
                             }
                         }
                     }
@@ -222,6 +227,7 @@ namespace spaceInvaders
                     // Check collisions between projectiles and enemies
 
                     // Collision detection for regular enemies
+                    //checks all projectiles, and then iterates through the enemy array to check if they intersect
                     for (int i = Projectiles.Count - 1; i >= 0; i--)
                     {
                         bool collided = false;
@@ -244,6 +250,7 @@ namespace spaceInvaders
                     }
 
                     // Collision detection for hard enemies
+                    //same as above
                     for (int k = Projectiles.Count - 1; k >= 0; k--)
                     {
                         bool hardCollided = false;
@@ -291,16 +298,6 @@ namespace spaceInvaders
                 lastShotTime = gameTime.TotalGameTime;
             }
 
-            for (int i = Projectiles.Count - 1; i >= 0; i--)
-            {
-                Projectiles[i].Update(gameTime);
-                if (!Projectiles[i].IsActive)
-                {
-                    Projectiles.RemoveAt(i);
-                }
-            }
-
-            // Update enemy movement
             Enemy.UpdateMovement(Enemies, ref Movement, gameTime);
             Enemy.UpdateMovement(hardEnemies, ref Movement, gameTime);
 
@@ -309,50 +306,7 @@ namespace spaceInvaders
                 reset.ResetGame();
             }
 
-            CheckBottomBoundaryCollision();
-
             base.Update(gameTime);
-        }
-
-
-        private void CheckBottomBoundaryCollision()
-        {
-            bool anyEnemyHitBottom = false;
-
-            // Check regular enemies
-            for (int i = 0; i < Enemies.GetLength(0) && !anyEnemyHitBottom; i++)
-            {
-                for (int j = 0; j < Enemies.GetLength(1); j++)
-                {
-                    if (Enemies[i, j] != null && Enemies[i, j].GetBounds().Intersects(bottomBoundary))
-                    {
-                        anyEnemyHitBottom = true;
-                        break;
-                    }
-                }
-            }
-
-            // Check hard enemies if no regular enemy hit the bottom
-            if (!anyEnemyHitBottom)
-            {
-                for (int i = 0; i < hardEnemies.GetLength(0) && !anyEnemyHitBottom; i++)
-                {
-                    for (int j = 0; j < hardEnemies.GetLength(1); j++)
-                    {
-                        if (hardEnemies[i, j] != null && hardEnemies[i, j].GetBounds().Intersects(bottomBoundary))
-                        {
-                            anyEnemyHitBottom = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (anyEnemyHitBottom)
-            {
-                reset.ResetEnemies();
-                reset.DecrementLives();
-            }
         }
 
         protected override void Draw(GameTime gameTime)
@@ -374,7 +328,7 @@ namespace spaceInvaders
                     pixel.SetData(new[] { Color.White });
                     spriteBatch.Draw(pixel, bottomBoundary, Color.White);
 
-                    // Draw enemies
+                    // Draw enemy if it isn't null
                     for (int i = 0; i < Enemies.GetLength(0); i++)
                     {
                         for (int j = 0; j < Enemies.GetLength(1); j++)
@@ -386,6 +340,7 @@ namespace spaceInvaders
                         }
                     }
 
+                    //like above, but for white enemies
                     for (int i = 0; i < hardEnemies.GetLength(0); i++)
                     {
                         for (int j = 0; j < hardEnemies.GetLength(1); j++)
@@ -422,6 +377,7 @@ namespace spaceInvaders
                 case GameState.GameOver:
                     spriteBatch.Draw(youlose, Vector2.Zero, Color.White);
 
+                    //sprites on end screen
                     spriteBatch.Draw(tank, new Vector2(randomX1, randomY1), source, Color.White);
                     spriteBatch.Draw(tank, new Vector2(randomX2, randomY2), source, Color.White);
                     spriteBatch.Draw(tank, new Vector2(randomX3, randomY3), source, Color.White);

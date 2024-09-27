@@ -17,6 +17,7 @@ namespace spaceInvaders
             return new Rectangle((int)position.X, (int)position.Y, width, height);
         }
 
+        //initializes projectile
         public Projectile(GraphicsDevice graphicsDevice, int x, int y, int width, int height)
         {
             this.position = new Vector2(x, y);
@@ -39,10 +40,6 @@ namespace spaceInvaders
         public void Update(GameTime gameTime)
         {
             position.Y -= speed;
-            if (position.Y + height < 0)
-            {
-                IsActive = false;
-            }
         }
 
         public void Draw(SpriteBatch spriteBatch)

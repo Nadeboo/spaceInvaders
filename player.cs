@@ -11,7 +11,6 @@ namespace spaceInvaders
 {
     public class Player
     {
-
         public static Player Initialize(GraphicsDevice graphicsDevice, int screenWidth, int screenHeight)
         {
             int playerWidth = 30;

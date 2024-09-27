@@ -26,7 +26,7 @@ namespace spaceInvaders
 
         public void ResetEnemies()
         {
-            // Clear the arrays by setting all elements to null
+            // clear the arrays by setting all elements to null
             for (int i = 0; i < game.Enemies.GetLength(0); i++)
             {
                 for (int j = 0; j < game.Enemies.GetLength(1); j++)
@@ -36,7 +36,10 @@ namespace spaceInvaders
                 }
             }
 
-            // Repopulate the arrays
+            //basically the same as what's happening in enemy.cs 
+            //resets enemies to their original positions rather than creating new ones
+            //though it also very clearly creates new enemies so like i don't really know?
+            //game breaks if its removed thats what matters
             Random random = new Random();
             for (int i = 0; i < game.InitialEnemyPositions.GetLength(0); i++)
             {
