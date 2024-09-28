@@ -39,6 +39,8 @@ namespace spaceInvaders
         private int startY;
         public int EnemyWidth;
         public int EnemyHeight;
+        public int screenWidth;
+        public int screenHeight;
 
         private int randomX1, randomY1, randomX2, randomY2, randomX3, randomY3, randomX4, randomY4, randomX5, randomY5;
 
@@ -150,7 +152,7 @@ namespace spaceInvaders
 
         protected override void Update(GameTime gameTime)
         {
-            Window.Title = "SPACE INVADERS - SCORE: " + Score;
+            Window.Title = $"SPACE INVADERS - SCORE: {Score} WINDOW SIZE: 800x480";
             KeyboardState keyboardState = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
 
