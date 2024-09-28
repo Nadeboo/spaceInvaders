@@ -11,7 +11,7 @@ namespace spaceInvaders
         private double yPosition;
         private int width;
         private int height;
-        private double speed = 10; // enemy speed
+        private double speed = 0.5; // enemy speed
         private Vector2 initialPosition;
 
         public static (Enemy[,] regularEnemies, Enemy[,] hardEnemies, Vector2[,] initialPositions, int enemyWidth, int enemyHeight)

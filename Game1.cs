@@ -52,14 +52,15 @@ namespace spaceInvaders
         public GameState CurrentGameState;
         private Random random = new Random();
 
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             Lives = 1;
-            graphics.PreferredBackBufferWidth = 1920;
-            graphics.PreferredBackBufferHeight = 1080;
+            graphics.PreferredBackBufferWidth = 800;
+            graphics.PreferredBackBufferHeight = 480;
         }
 
         //creates a rectangle across the bottom of the screen
@@ -149,6 +150,7 @@ namespace spaceInvaders
 
         protected override void Update(GameTime gameTime)
         {
+            Window.Title = "SPACE INVADERS - SCORE: " + Score;
             KeyboardState keyboardState = Keyboard.GetState();
             MouseState mouseState = Mouse.GetState();
 
