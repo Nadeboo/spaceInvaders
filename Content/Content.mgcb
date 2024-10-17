@@ -25,6 +25,24 @@
 /processorParam:TextureFormat=Color
 /build:bender.png
 
+#begin crazydiamond.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:crazydiamond.mp3
+
+#begin explosion.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:explosion.wav
+
+#begin popcorn.mp3
+/importer:Mp3Importer
+/processor:SongProcessor
+/processorParam:Quality=Best
+/build:popcorn.mp3
+
 #begin ride.png
 /importer:TextureImporter
 /processor:TextureProcessor

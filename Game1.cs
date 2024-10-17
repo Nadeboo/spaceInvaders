@@ -4,6 +4,9 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Xna.Framework.Media;
+using Microsoft.Xna.Framework.Audio;
+using System.Threading;
 
 namespace spaceInvaders
 {
@@ -18,7 +21,6 @@ namespace spaceInvaders
         public Enemy[,] Enemies; 
         public Enemy[,] hardEnemies; 
         public Vector2[,] InitialEnemyPositions;
-        private List<Enemy> enemiesToDraw;
         public List<Projectile> Projectiles;
         public Texture2D startTexture;
         public Texture2D gameOverTexture;
@@ -35,8 +37,6 @@ namespace spaceInvaders
 
         public int Score;
         public int Lives;
-        private int startX;
-        private int startY;
         public int EnemyWidth;
         public int EnemyHeight;
         public int screenWidth;
@@ -54,6 +54,12 @@ namespace spaceInvaders
         public GameState CurrentGameState;
         private Random random = new Random();
 
+        public int levelNumber;
+
+        private Song crazyDiamond;
+        List<SoundEffect> soundEffects;
+
+
 
         public Game1()
         {
@@ -63,6 +69,7 @@ namespace spaceInvaders
             Lives = 1;
             graphics.PreferredBackBufferWidth = 800;
             graphics.PreferredBackBufferHeight = 480;
+            soundEffects = new List<SoundEffect>();
         }
 
         //creates a rectangle across the bottom of the screen
@@ -76,10 +83,21 @@ namespace spaceInvaders
 
         protected override void LoadContent()
         {
+            levelNumber = 0;
             spriteBatch = new SpriteBatch(GraphicsDevice);
             scoreFont = Content.Load<SpriteFont>("score");
             tank = Content.Load<Texture2D>("SpriteSheet_Tanks");
 
+            this.crazyDiamond = Content.Load<Song>("popcorn");
+            MediaPlayer.Play(crazyDiamond);
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Volume = 1f;
+
+            // Initialize the list if you haven't already
+            soundEffects = new List<SoundEffect>();
+
+            // Add only SoundEffect objects to the list
+            soundEffects.Add(Content.Load<SoundEffect>("explosion"));
 
             int screenWidth = GraphicsDevice.Viewport.Width;
             int screenHeight = GraphicsDevice.Viewport.Height;
@@ -95,27 +113,27 @@ namespace spaceInvaders
             startButton = new StartButton(Content, screenWidth, screenHeight);
             Player = Player.Initialize(GraphicsDevice, screenWidth, screenHeight);
             Projectiles = new List<Projectile>();
-            (Enemies, hardEnemies, InitialEnemyPositions, EnemyWidth, EnemyHeight) = Enemy.InitializeEnemies(GraphicsDevice, screenWidth, screenHeight);
+            (Enemies, hardEnemies, InitialEnemyPositions, EnemyWidth, EnemyHeight) = Enemy.InitializeEnemies(GraphicsDevice, screenWidth, screenHeight, levelNumber);
 
             int randomX = random.Next(0, GraphicsDevice.Viewport.Width - source.Width);
             int randomY = random.Next(0, GraphicsDevice.Viewport.Height - source.Height);
 
             //for drawing the 5 random sprites on the end screen
             //i didn't feel like giving it any effort
-            randomX1 = random.Next(0, 1920);
-            randomY1 = random.Next(0, 1080);
+            randomX1 = random.Next(0, 800);
+            randomY1 = random.Next(0, 480);
 
-            randomX2 = random.Next(0, 1920);
-            randomY2 = random.Next(0, 1080);
+            randomX2 = random.Next(0, 800);
+            randomY2 = random.Next(0, 480);
 
-            randomX3 = random.Next(0, 1920);
-            randomY3 = random.Next(0, 1080);
+            randomX3 = random.Next(0, 800);
+            randomY3 = random.Next(0, 480);
 
-            randomX4 = random.Next(0, 1920);
-            randomY4 = random.Next(0, 1080);
+            randomX4 = random.Next(0, 800);
+            randomY4 = random.Next(0, 480);
 
-            randomX5 = random.Next(0, 1920);
-            randomY5 = random.Next(0, 1080);
+            randomX5 = random.Next(0, 800);
+            randomY5 = random.Next(0, 480);
 
             reset = new Reset(this); //reset.cs
 
@@ -148,6 +166,15 @@ namespace spaceInvaders
             }
 
             return true;
+        }
+        private void PlayExplosionSound(float volume)
+        {
+            if (soundEffects.Count > 0)
+            {
+                SoundEffectInstance explosionInstance = soundEffects[0].CreateInstance();
+                explosionInstance.Volume = volume;
+                explosionInstance.Play();
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -218,14 +245,11 @@ namespace spaceInvaders
                             }
                         }
                     }
+
                     if (AreAllEnemiesDestroyed())
                     {
                         CurrentGameState = GameState.GameWon;
-                    }
-
-                    if (Enemies.GetLength(0) == 0 && hardEnemies.GetLength(0) == 0)
-                    {
-                        CurrentGameState = GameState.GameWon;
+                        levelNumber++;
                     }
 
                     // Check collisions between projectiles and enemies
@@ -244,6 +268,7 @@ namespace spaceInvaders
                                     Projectiles.RemoveAt(i);
                                     Enemies[k, j] = null;
                                     Score++;
+                                    PlayExplosionSound(0.1f);
                                     collided = true;
                                     break;
                                 }
@@ -266,7 +291,7 @@ namespace spaceInvaders
                                 {
                                     Projectiles.RemoveAt(k);
                                     hardEnemies[m, l] = null; 
-                                    Score += 2; 
+                                    Score += 2;
                                     hardCollided = true;
                                     break;
                                 }
@@ -282,6 +307,7 @@ namespace spaceInvaders
                     {
                         reset.ResetGame();
                         CurrentGameState = GameState.InGame;
+                        levelNumber = 0;
                     }
                     break;
                 case GameState.GameWon:

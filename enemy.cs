@@ -11,14 +11,14 @@ namespace spaceInvaders
         private double yPosition;
         private int width;
         private int height;
-        private double speed = 0.5; // enemy speed
-        private Vector2 initialPosition;
+        public double speed;
 
         public static (Enemy[,] regularEnemies, Enemy[,] hardEnemies, Vector2[,] initialPositions, int enemyWidth, int enemyHeight)
-        InitializeEnemies(GraphicsDevice graphicsDevice, int screenWidth, int screenHeight)
+        InitializeEnemies(GraphicsDevice graphicsDevice, int screenWidth, int screenHeight, int levelNumber)
         {
+
             int enemyNum = 10; // num of columns
-            int numRows = 5; // num of rows. multiply together for the total number of enemies
+            int numRows = 1; // num of rows. multiply together for the total number of enemies
             int totalSpaceWidth = (enemyNum - 1) * 10;
             int totalRectWidth = screenWidth - totalSpaceWidth;
             int enemyWidth = totalRectWidth / enemyNum;
@@ -27,6 +27,7 @@ namespace spaceInvaders
             int hardEnemyHeight = enemyHeight;
             int yOffset = 50;
             int xOffset = 0;
+            double speed = 0.5 + (levelNumber * 100);
 
             Enemy[,] regularEnemiesArray = new Enemy[numRows, enemyNum];
             Enemy[,] hardEnemiesArray = new Enemy[numRows, enemyNum];
@@ -51,12 +52,12 @@ namespace spaceInvaders
                     initialPositionsArray[j, i] = position;
 
                     //creates a new instance of an enemy for each of the previously created positions
-                    regularEnemiesArray[j, i] = new Enemy(graphicsDevice, xPosition, yPosition, enemyWidth, enemyHeight);
+                    regularEnemiesArray[j, i] = new Enemy(graphicsDevice, xPosition, yPosition, enemyWidth, enemyHeight, speed);
 
                     // 50% chance to add a hard enemy at the same position
                     if (random.Next(2) == 0)
                     {
-                        hardEnemiesArray[j, i] = new Enemy(graphicsDevice, xPosition, yPosition, hardEnemyWidth, hardEnemyHeight);
+                        hardEnemiesArray[j, i] = new Enemy(graphicsDevice, xPosition, yPosition, hardEnemyWidth, hardEnemyHeight, speed);
                     }
                 }
             }
@@ -71,12 +72,13 @@ namespace spaceInvaders
         }
 
         // initializes enemy
-        public Enemy(GraphicsDevice graphicsDevice, int x, int y, int width, int height)
+        public Enemy(GraphicsDevice graphicsDevice, int x, int y, int width, int height, double speed)
         {
             this.xPosition = x;
             this.yPosition = y;
             this.width = width;
             this.height = height;
+            this.speed = speed;
 
             // initializes a 1,1 white pixel sprite
             pixel = new Texture2D(graphicsDevice, 1, 1);
